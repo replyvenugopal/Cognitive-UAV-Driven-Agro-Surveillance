@@ -1,0 +1,84 @@
+# Default configuration for the Cognitive UAV-Driven Agro-Surveillance pipeline.
+# Mirrors the setup described in the paper "Cognitive UAV-Driven Agro-Surveillance
+# Framework for Predicting Crop Stress-Induced Yield Loss Using Spatio-Temporal
+# Learning and Adaptive Irrigation Control" (Selvakumar & Venugopal).
+
+seed: 42
+
+data:
+  # Path to the raw Kaggle CSV once downloaded via scripts/download_dataset.py.
+  # If this file does not exist, the pipeline automatically falls back to the
+  # synthetic generator in agrosurveillance.data.synthetic so the full stack
+  # remains runnable end-to-end without network / Kaggle credentials.
+  raw_csv: "data/raw/crop_health_and_environmental_stress.csv"
+  synthetic_fallback: true
+
+  # The public dataset is a flat table of per-observation rows, not an explicit
+  # zone/time series. We reconstruct zone-time sequences (Eq. 1-4 in the paper)
+  # by grouping rows on `zone_group_col` and treating row order within each
+  # group as the time axis. See docs/dataset.md for the full rationale.
+  zone_group_col: "Field_Boundaries"
+  sequence_length: 12          # T: timesteps per zone sequence
+  baseline_window: 4           # L: rolling window for stress-aware normalization (Eq. 8-9)
+  train_fraction: 0.7          # chronological split point (Eq. 3-4)
+
+  # Column groups (see agrosurveillance/data/schema.py for the canonical list)
+  target_col: "Crop_Stress_Indicator"
+  health_label_col: "health_label"   # derived: 1 = healthy, 0 = unhealthy
+
+model:
+  feature_dim: 64
+  spatial_heads: 4
+  temporal_hidden: 128
+  temporal_layers: 2
+  diffusion_steps: 2
+  diffusion_lambda: 0.35
+  dropout: 0.1
+  vulnerability_eta1: 0.6
+  vulnerability_eta2: 0.4
+  vulnerability_decay: 0.85     # delta in Eq. 28
+  vulnerability_horizon: 5      # K in Eq. 28 / 30
+
+training:
+  epochs: 30
+  batch_size: 32
+  lr: 1.0e-3
+  weight_decay: 1.0e-5
+  early_stopping_patience: 6
+  device: "auto"                # "auto" | "cpu" | "cuda"
+
+rl:
+  algorithm: "sac"
+  episodes: 200
+  max_steps_per_episode: 24
+  gamma: 0.97
+  tau: 0.005
+  actor_lr: 3.0e-4
+  critic_lr: 3.0e-4
+  alpha_lr: 3.0e-4
+  auto_entropy_tuning: true
+  hidden_dim: 128
+  replay_capacity: 50000
+  batch_size: 128
+  warmup_steps: 500
+  reward_alpha: 1.0             # weight on vulnerability (Eq. 32/44)
+  reward_beta: 0.4              # weight on water usage
+  reward_gamma: 0.6             # weight on delayed vulnerability reduction
+  delayed_reward_horizon: 3     # k in Eq. 44
+  max_irrigation: 10.0          # a_max (Eq. 47), arbitrary mm/step units
+
+ablation:
+  # Each entry disables one architectural component to reproduce Table 8.
+  configs:
+    - name: "full"
+      disable: []
+    - name: "without_zoning"
+      disable: ["zoning"]
+    - name: "without_diffusion"
+      disable: ["diffusion"]
+    - name: "without_temporal_encoding"
+      disable: ["temporal"]
+    - name: "without_rl"
+      disable: ["rl"]
+    - name: "without_stress_aware_norm"
+      disable: ["stress_aware_norm"]

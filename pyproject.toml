@@ -1,0 +1,14 @@
+[project]
+name = "agrosurveillance"
+version = "0.1.0"
+description = "Cognitive UAV-Driven Agro-Surveillance: GeoSpatio-TRiNet stress forecasting + SAC adaptive irrigation control"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
