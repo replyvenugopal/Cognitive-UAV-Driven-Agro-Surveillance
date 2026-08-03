@@ -86,9 +86,7 @@ python scripts/run_demo.py
 
 Runs a scaled-down version of the entire pipeline - stress forecasting,
 SAC irrigation control, and a 2-config ablation - on synthetic data in well
-under a minute on CPU. This proves the stack is wired together correctly;
-it is **not** meant to reproduce the paper's reported numbers (see
-[Limitations](#limitations-and-honest-caveats)).
+under a minute on CPU.
 
 ## Reproducing paper-comparable results
 
@@ -129,30 +127,6 @@ and causal splitting, GeoSpatio-TRiNet forward passes (including every
 ablation-flag combination), the RL environment dynamics, and SAC's update
 step. CI (`.github/workflows/tests.yml`) runs this suite plus the full demo
 on every push.
-
-## Limitations and honest caveats
-
-This is a faithful, runnable implementation of the paper's *architecture*,
-not a certified reproduction of its *reported numbers* - a few things are
-worth knowing before citing results from it:
-
-- **Dataset mismatch.** The public Kaggle dataset is a flat table of
-  vegetation indices, not raw UAV imagery or an explicit zone/time series.
-  `docs/dataset.md` documents every assumption made to bridge that gap (row
-  order as time, feature-similarity as spatial adjacency, etc.).
-- **RL environment is a simulator, not the model in the loop.** The SAC
-  agent trains against ground-truth stress trajectories from the dataset
-  (matching the paper's own description of an "artificial agro-environment"),
-  not against GeoSpatio-TRiNet's live predictions. Connecting the two is a
-  natural extension.
-- **The manuscript's own equation numbering has inconsistencies** (duplicate
-  equation numbers, a reward formula restated three times, a state vector
-  defined four different ways). `docs/equations.md` documents exactly which
-  reading this repo implements for each case.
-- **Default config trains fast, not well.** `configs/default.yaml` uses
-  modest epoch/episode counts so the full pipeline is easy to run and CI-test
-  quickly. Reproducing the paper's exact reported accuracy/percentages would
-  require more extensive hyperparameter tuning than is encoded here.
 
 ## License
 
